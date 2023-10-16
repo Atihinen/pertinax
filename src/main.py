@@ -21,7 +21,31 @@ class PDFViewer(Gtk.Window):
 
         # Create a menu bar
         menubar = Gtk.MenuBar()
-        vbox.pack_start(menubar, False, False, 0)
+        vbox.pack_start(menubar, False, False, 0)  # Position at the top
+
+        # Create a horizontal box to hold the PDF view and thumbnail view
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        vbox.pack_start(hbox, True, True, 0)
+
+        # Create a scrolled window to display the PDF
+        self.pdf_view = Gtk.ScrolledWindow()
+        self.pdf_view.set_vexpand(True)
+        self.pdf_view.set_hexpand(True)
+        hbox.pack_end(self.pdf_view, True, True, 0)
+
+        # Create a WebKit2WebView to display the PDF
+        self.webview = WebKit2.WebView()
+        self.pdf_view.add(self.webview)
+
+        # Create a scrolled window for the thumbnail view
+        self.thumbnail_view = Gtk.ScrolledWindow()
+        self.thumbnail_view.set_vexpand(True)
+        self.thumbnail_view.set_hexpand(False)
+        hbox.pack_start(self.thumbnail_view, False, False, 0)
+
+        # Create a box to hold the thumbnails
+        self.thumbnail_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.thumbnail_view.add(self.thumbnail_box)
 
         # Create a "File" menu
         file_menu = Gtk.Menu()
@@ -42,32 +66,8 @@ class PDFViewer(Gtk.Window):
 
         # Create a "Thumbnail" option in the "View" menu
         thumbnail_item = Gtk.CheckMenuItem(label="Thumbnail")
-        thumbnail_item.connect("toggled", self.on_thumbnail_toggled)  # Connect the signal here
+        thumbnail_item.connect("toggled", self.on_thumbnail_toggled)
         view_menu.append(thumbnail_item)
-
-        # Create a box to hold the PDF view and thumbnail view
-        self.view_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        vbox.pack_start(self.view_box, True, True, 0)
-
-        # Create a scrolled window to display the PDF
-        self.pdf_view = Gtk.ScrolledWindow()
-        self.pdf_view.set_vexpand(True)
-        self.pdf_view.set_hexpand(True)
-        self.view_box.pack_start(self.pdf_view, True, True, 0)
-
-        # Create a WebKit2WebView to display the PDF
-        self.webview = WebKit2.WebView()
-        self.pdf_view.add(self.webview)
-
-        # Create a scrolled window for the thumbnail view
-        self.thumbnail_view = Gtk.ScrolledWindow()
-        self.thumbnail_view.set_vexpand(True)
-        self.thumbnail_view.set_hexpand(False)
-        self.view_box.pack_start(self.thumbnail_view, False, False, 0)
-
-        # Create a box to hold the thumbnails
-        self.thumbnail_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.thumbnail_view.add(self.thumbnail_box)
 
     def on_open_item_activate(self, menu_item):
         dialog = Gtk.FileChooserDialog(
@@ -91,18 +91,9 @@ class PDFViewer(Gtk.Window):
         dialog.destroy()
 
     def on_thumbnail_toggled(self, menu_item):
-        print("Thumbnail toggled") 
+        print("Thumbnail toggled")
         self.thumbnail_mode = menu_item.get_active()
-        self.update_view()
-
-    def update_view(self):
-        if self.thumbnail_mode:
-            self.pdf_view.hide()
-            self.thumbnail_view.show()
-            self.show_thumbnail_view()
-        else:
-            self.thumbnail_view.hide()
-            self.pdf_view.show()
+        self.show_thumbnail_view()  # Call show_thumbnail_view when toggling the thumbnail mode
 
     def create_thumbnail(self, page_num):
         # Get the page at the specified page number
@@ -145,6 +136,14 @@ class PDFViewer(Gtk.Window):
         for widget in self.thumbnail_box.get_children():
             self.thumbnail_box.remove(widget)
 
+        # Hide or show the PDF view based on the thumbnail mode
+        if self.thumbnail_mode:
+            self.pdf_view.hide()
+            self.thumbnail_view.show()
+        else:
+            self.pdf_view.show()
+            self.thumbnail_view.hide()
+
         # Create thumbnails for each page and add them to the thumbnail box
         if self.pdf_document is not None:
             num_pages = self.pdf_document.get_n_pages()
@@ -157,6 +156,9 @@ class PDFViewer(Gtk.Window):
             print("No PDF document loaded")
 
         self.thumbnail_box.show_all()  # Show all thumbnails in the box
+
+        # Ensure the PDF view is always visible
+        self.pdf_view.show()
 
     def load_pdf(self, pdf_path):
         # Load the specified PDF file into the WebView
