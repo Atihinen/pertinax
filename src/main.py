@@ -1,10 +1,10 @@
 import gi
 import math
-import cairo 
+import cairo
 gi.require_version('Gtk', '3.0')
 gi.require_version('Poppler', '0.18')
 gi.require_version('WebKit2', '4.0')
-from gi.repository import Gtk, Poppler, WebKit2, GdkPixbuf
+from gi.repository import Gtk, Poppler, WebKit2, GdkPixbuf, Gdk
 
 class PDFViewer(Gtk.Window):
     def __init__(self):
@@ -41,6 +41,7 @@ class PDFViewer(Gtk.Window):
         self.thumbnail_view = Gtk.ScrolledWindow()
         self.thumbnail_view.set_vexpand(True)
         self.thumbnail_view.set_hexpand(False)
+        self.thumbnail_view.set_min_content_width(200)
         hbox.pack_start(self.thumbnail_view, False, False, 0)
 
         # Create a box to hold the thumbnails
@@ -100,7 +101,7 @@ class PDFViewer(Gtk.Window):
         page = self.pdf_document.get_page(page_num)
         if page is not None:
             # Get the page size (assuming a standard page size of 100x100)
-            thumbnail_size = 100
+            thumbnail_size = 200
             page_rect = page.get_size()
             aspect_ratio = page_rect[0] / page_rect[1]
             width = thumbnail_size
@@ -118,15 +119,46 @@ class PDFViewer(Gtk.Window):
 
             # Convert the surface to a pixbuf
             data = surface.get_data()
+            stride = surface.get_stride()
             pixbuf = GdkPixbuf.Pixbuf.new_from_data(
-                data, GdkPixbuf.Colorspace.RGB, False, 8, width, height, width * 4
+                data, GdkPixbuf.Colorspace.RGB, False, 8, width, height, stride
             )
 
             # Create an image widget to display the thumbnail
             thumbnail = Gtk.Image.new_from_pixbuf(pixbuf)
-            return thumbnail
+
+            # Create an event box to wrap the thumbnail image and handle events
+            event_box = Gtk.EventBox()
+            event_box.add(thumbnail)
+
+            # Connect a callback to handle thumbnail clicks
+            event_box.connect("button-press-event", self.on_thumbnail_clicked, page_num)
+
+            # Create a label to display the page number
+            page_number_label = Gtk.Label(label=str(page_num + 1))  # Page numbers start from 1
+            page_number_label.set_valign(Gtk.Align.START)
+            page_number_label.set_margin_top(10)  # Adjust the top margin as needed
+            page_number_label.set_margin_left(10)
+
+            # Pack the thumbnail and page number label into the thumbnail box
+            thumbnail_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            thumbnail_box.pack_start(page_number_label, False, False, 0)
+            thumbnail_box.pack_end(event_box, False, False, 0)
+
+            return thumbnail_box
         else:
             return None
+
+    def on_thumbnail_clicked(self, widget, event, page_num):
+        print("Clicked thumbnail", page_num)  # Change this line
+
+        # Handle thumbnail click event
+        if event.type == Gdk.EventType.BUTTON_PRESS and event.button == 1:
+            # Left mouse button (BUTTON1) click
+            print(f"Thumbnail clicked! Page number: {page_num + 1}")
+
+            # Load the specified page in the PDF
+            self.load_pdf_page(page_num)
 
     def show_thumbnail_view(self):
         print("Showing thumbnail view")
@@ -140,6 +172,10 @@ class PDFViewer(Gtk.Window):
         if self.thumbnail_mode:
             self.pdf_view.hide()
             self.thumbnail_view.show()
+            # Set a light gray background color for the thumbnail view
+            rgba = Gdk.RGBA()
+            rgba.parse("rgb(220, 220, 220)")
+            self.thumbnail_view.override_background_color(Gtk.StateFlags.NORMAL, rgba)
         else:
             self.pdf_view.show()
             self.thumbnail_view.hide()
@@ -149,9 +185,12 @@ class PDFViewer(Gtk.Window):
             num_pages = self.pdf_document.get_n_pages()
             print("Number of pages:", num_pages)
             for page_num in range(num_pages):
-                thumbnail = self.create_thumbnail(page_num)
-                self.thumbnail_box.add(thumbnail)
-                thumbnail.show()  # Ensure the thumbnail is visible
+                thumbnail_box = self.create_thumbnail(page_num)
+                thumbnail_box.set_margin_bottom(10)
+                # Connect the thumbnail click event handler
+                thumbnail_box.connect("button-press-event", self.on_thumbnail_clicked, page_num)
+                self.thumbnail_box.add(thumbnail_box)
+                thumbnail_box.show_all()  # Ensure the thumbnail and page number are visible
         else:
             print("No PDF document loaded")
 
@@ -161,11 +200,30 @@ class PDFViewer(Gtk.Window):
         self.pdf_view.show()
 
     def load_pdf(self, pdf_path):
+        # Store the PDF path
+        self.pdf_path = pdf_path
+
         # Load the specified PDF file into the WebView
-        self.webview.load_uri("file://" + pdf_path)
+        self.webview.load_uri(f"file://{pdf_path}")
 
         # Load the PDF document using Poppler
-        self.pdf_document = Poppler.Document.new_from_file("file://" + pdf_path)
+        self.pdf_document = Poppler.Document.new_from_file(f"file://{pdf_path}")
+
+    def load_pdf_page(self, page_num):
+        if self.pdf_document is not None and page_num >= 0 and page_num < self.pdf_document.get_n_pages():
+            # Load the specified page in the PDF
+            self.scroll_pdf_page(page_num)
+
+    def scroll_pdf_page(self, page_num):
+        if self.pdf_document is not None and page_num >= 0 and page_num < self.pdf_document.get_n_pages():
+            # Scroll to the specified page using JavaScript
+            self.webview.run_javascript(f"pdfViewer.currentPageNumber = {page_num};", None, None, None)
+
+            print(f"Scrolling to PDF page {page_num + 1}")
+
+
+
+
 
 if __name__ == "__main__":
     window = PDFViewer()
