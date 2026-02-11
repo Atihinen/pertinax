@@ -1,0 +1,17 @@
+# Test dependencies for Pertinax PDF Compositor
+# Install with: pip install -r requirements-test.txt
+
+# Unit testing
+pytest>=7.0.0
+pytest-timeout>=2.1.0
+
+# Linting
+ruff>=0.1.0
+
+# GUI testing
+robotframework>=6.0.0
+# Note: python3-dogtail must be installed system-wide with:
+# sudo apt-get install python3-dogtail
+
+# PDF manipulation (also needed for tests)
+pypdf>=3.0.0

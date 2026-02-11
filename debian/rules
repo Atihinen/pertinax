@@ -1,0 +1,28 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@ --with python3 --buildsystem=pybuild
+
+override_dh_auto_install:
+	# Install Python module
+	mkdir -p debian/pertinax/usr/lib/python3/dist-packages
+	cp -r src/pertinax debian/pertinax/usr/lib/python3/dist-packages/
+	
+	# Install executables
+	mkdir -p debian/pertinax/usr/bin
+	install -m 755 src/pertinax_gui.py debian/pertinax/usr/bin/pertinax
+	install -m 755 src/pertinax_cli.py debian/pertinax/usr/bin/pertinax-cli
+	
+	# Install desktop file
+	mkdir -p debian/pertinax/usr/share/applications
+	install -m 644 pertinax.desktop debian/pertinax/usr/share/applications/
+	
+	# Install documentation
+	mkdir -p debian/pertinax/usr/share/doc/pertinax
+	install -m 644 docs/user-guide.md debian/pertinax/usr/share/doc/pertinax/
+	install -m 644 docs/developer-guide.md debian/pertinax/usr/share/doc/pertinax/
+	install -m 644 README.md debian/pertinax/usr/share/doc/pertinax/
+
+override_dh_auto_test:
+	# Run unit tests
+	python3 tests/test_document.py
