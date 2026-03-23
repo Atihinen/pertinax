@@ -1,0 +1,14 @@
+pertinax (0.1.0-1) unstable; urgency=medium
+
+  * Initial release
+  * Phase 1: Core PDF module with CLI
+  * Phase 2: GTK 4 GUI application
+  * Features:
+    - Open and import PDF files
+    - Page deletion and reordering
+    - Thumbnail sidebar with preview pane
+    - Keyboard shortcuts
+    - Export to new PDF
+    - Source PDFs remain immutable
+
+ -- Pertinax Development Team <dev@example.com>  Tue, 11 Feb 2026 12:00:00 +0000

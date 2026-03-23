@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Pertinax PDF Compositor
+GenericName=PDF Page Compositor
+Comment=Organize and rearrange PDF pages
+Icon=pertinax
+Exec=pertinax
+Terminal=false
+Categories=Office;Viewer;
+MimeType=application/pdf;
+Keywords=PDF;page;organize;merge;split;
+StartupNotify=true
